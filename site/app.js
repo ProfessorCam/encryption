@@ -4,6 +4,7 @@
 
   var nav = document.getElementById('nav');
   var main = document.getElementById('main');
+  var content = document.getElementById('content');
   var pcapCache = {}, textCache = {};
 
   function esc(s) {
@@ -46,8 +47,19 @@
 
   /* ---------- left column ---------- */
 
+  var STACK_GROUPS = { 2: 'Layer 2 · Link', 3: 'Layer 3 · Network', 4: 'Layer 4 · Transport', 7: 'Layer 7 · Application', tls: 'Between 4 and 7 · TLS', files: 'Not packets · files', stack: 'All layers' };
+  var STACK_CHIPS = { 2: 'L2', 3: 'L3', 4: 'L4', 7: 'L7', tls: 'TLS', files: 'files', stack: 'L2–7' };
+
   function buildNav() {
+    var last = null;
     LESSONS.forEach(function (l, i) {
+      if (l.stack !== undefined && l.stack !== last) {
+        var g = document.createElement('div');
+        g.className = 'nav-group';
+        g.textContent = STACK_GROUPS[l.stack] || String(l.stack);
+        nav.appendChild(g);
+        last = l.stack;
+      }
       var b = document.createElement('button');
       b.className = 'row';
       b.type = 'button';
@@ -55,7 +67,8 @@
       b.innerHTML =
         '<span class="num">' + (i + 1) + '</span>' +
         '<span class="text"><span class="title">' + esc(l.title) + '</span>' +
-        '<span class="sub">' + esc(l.subtitle) + '</span></span>';
+        '<span class="sub">' + esc(l.subtitle) + '</span></span>' +
+        (l.stack !== undefined ? '<span class="lay">' + esc(l.chip || STACK_CHIPS[l.stack] || l.stack) + '</span>' : '');
       b.addEventListener('click', function () { location.hash = l.id; });
       nav.appendChild(b);
     });
@@ -134,13 +147,13 @@
         { id: 'tag',    name: 'Auth tag',        bytes: 16,  width: 10, color: 'icmp', fields: ['16 bytes', 'tamper', 'check'] }
       ],
       stages: [
-        { on: ['plain'],                                        hold: 3600, caption: 'The browser has a normal HTTP request to send: 742 bytes, starting GET /action_page.php?name=Tux&pwd=Penguin2026! On the Protocols site this is where the story ended and the request went on the wire as is.' },
-        { on: ['nonce', 'cipher', 'tag'],                       hold: 4200, caption: 'AES-GCM scrambles it with the session key agreed in the handshake. The ciphertext is exactly as long as the plaintext, 742 bytes, but none of it is readable. An 8-byte nonce (a number used once) goes in front so that identical requests never encrypt the same way, and a 16-byte authentication tag goes at the end: change one bit in transit and the receiver throws the whole record away.' },
-        { on: ['rec', 'nonce', 'cipher', 'tag'],                hold: 3800, caption: 'TLS puts a 5-byte record header in front: type 23 (Application Data), version 3.3 (TLS 1.2), length 766. The header itself is not encrypted, so a sniffer can tell that data was sent and how much, just not what.' },
-        { on: ['tcp', 'rec', 'nonce', 'cipher', 'tag'],         hold: 3600, caption: 'TCP adds its header: from port 46516 to port 443. Ports, sequence numbers, flags and window are all in the clear. Encryption starts above TCP, never below it.' },
-        { on: ['ip', 'tcp', 'rec', 'nonce', 'cipher', 'tag'],   hold: 3400, caption: 'IP adds 192.168.110.50 to 192.168.110.1. Who is talking to whom is never a secret on a network; only what they say can be.' },
-        { on: ['eth', 'ip', 'tcp', 'rec', 'nonce', 'cipher', 'tag'], hold: 3800, caption: 'Ethernet adds the MAC addresses. 837 bytes on the wire: 66 bytes of readable headers and 771 bytes of TLS. This is frame 49 in the capture below.' },
-        { on: ['eth', 'ip', 'tcp', 'rec', 'nonce', 'cipher', 'tag'], done: true, hold: 3000, caption: 'Sent. The server strips the headers, checks the tag, decrypts with the same session key, reads the password, and answers with a 200 OK built exactly the same way in the other direction.' }
+        { on: ['plain'],                                        hold: 3600, caption: { s: 'The browser has an ordinary web request to send, 742 bytes, with the name and password in it. On the Protocols site this is where the story ended and it went on the wire as is.', m: 'The browser has a normal HTTP request to send: 742 bytes, starting GET /action_page.php?name=Tux&pwd=Penguin2026! On the Protocols site this is where the story ended and the request went on the wire as is.', e: 'Plaintext: a 742-byte HTTP/1.1 request, GET /action_page.php?name=Tux&pwd=Penguin2026! plus headers. In plain HTTP this is the TCP payload as is.' } },
+        { on: ['nonce', 'cipher', 'tag'],                       hold: 4200, caption: { s: 'The request is scrambled with the secret code agreed in the greeting. The scrambled version is exactly as long, but unreadable. A fresh number goes in front so the same request never scrambles the same way twice, and a check value at the end catches any tampering.', m: 'AES-GCM scrambles it with the session key agreed in the handshake. The ciphertext is exactly as long as the plaintext, 742 bytes, but none of it is readable. An 8-byte nonce (a number used once) goes in front so that identical requests never encrypt the same way, and a 16-byte authentication tag goes at the end: change one bit in transit and the receiver throws the whole record away.', e: 'AES-128-GCM under the client write key: the ciphertext is 742 bytes, the same as the plaintext. An 8-byte explicit nonce precedes it (with the 4-byte implicit salt it forms the 12-byte GCM nonce) and a 16-byte authentication tag follows; any modified bit fails verification and the record is discarded.' } },
+        { on: ['rec', 'nonce', 'cipher', 'tag'],                hold: 3800, caption: { s: 'A small 5-byte label goes in front saying "this is scrambled data, and here is how long it is". The label itself is readable, so a sniffer knows something was sent, and how much, but not what.', m: 'TLS puts a 5-byte record header in front: type 23 (Application Data), version 3.3 (TLS 1.2), length 766. The header itself is not encrypted, so a sniffer can tell that data was sent and how much, just not what.', e: 'TLS record header, 5 bytes: content type 23 (application_data), version 0x0303, length 766 (8 + 742 + 16). The header is cleartext, so record count and sizes are observable.' } },
+        { on: ['tcp', 'rec', 'nonce', 'cipher', 'tag'],         hold: 3600, caption: { s: 'The delivery layer adds its label: which door (port) on each side. Port 443 tells everyone this is HTTPS. Scrambling happens above this layer, never below it.', m: 'TCP adds its header: from port 46516 to port 443. Ports, sequence numbers, flags and window are all in the clear. Encryption starts above TCP, never below it.', e: 'TCP header, 32 bytes with the timestamp option: 46516 to 443, PSH/ACK, seq 2243. Ports, sequence numbers, flags and window are cleartext; TLS protects only the payload.' } },
+        { on: ['ip', 'tcp', 'rec', 'nonce', 'cipher', 'tag'],   hold: 3400, caption: { s: 'The address layer adds which computer is talking to which. Who talks to whom is never a secret on a network; only what they say can be.', m: 'IP adds 192.168.110.50 to 192.168.110.1. Who is talking to whom is never a secret on a network; only what they say can be.', e: 'IPv4 header: 192.168.110.50 to 192.168.110.1, protocol 6. Endpoint addresses are always observable on the path.' } },
+        { on: ['eth', 'ip', 'tcp', 'rec', 'nonce', 'cipher', 'tag'], hold: 3800, caption: { s: 'Finally the network-card addresses go on. 837 bytes leave the computer: 66 readable bytes of labels and 771 bytes of scrambled data. This is frame 49 in the capture below.', m: 'Ethernet adds the MAC addresses. 837 bytes on the wire: 66 bytes of readable headers and 771 bytes of TLS. This is frame 49 in the capture below.', e: 'Ethernet header: an 837-byte frame, 66 bytes of cleartext headers (14 + 20 + 32) and 771 bytes of TLS record (5 + 766). Frame 49 below.' } },
+        { on: ['eth', 'ip', 'tcp', 'rec', 'nonce', 'cipher', 'tag'], done: true, hold: 3000, caption: { s: 'Sent. The server removes the labels, checks the tamper value, unscrambles with the same code, reads the password, and answers with a page built exactly the same way in the other direction.', m: 'Sent. The server strips the headers, checks the tag, decrypts with the same session key, reads the password, and answers with a 200 OK built exactly the same way in the other direction.', e: 'On receipt the server strips the headers, verifies the GCM tag, decrypts under the client write key, parses the HTTP request, and responds with records built the same way under the server write key.' } }
       ]
     }
   };
@@ -169,7 +182,7 @@
           if (on) total += g.bytes;
         });
         el.classList.toggle('done', !!st.done);
-        text.textContent = st.caption;
+        text.textContent = lv(st.caption);
         bytesEl.textContent = total;
         stepEl.textContent = 'step ' + (k + 1) + ' of ' + n;
         Array.prototype.forEach.call(dots, function (d, j) { d.classList.toggle('on', j === k); });
@@ -213,7 +226,7 @@
   /* ---------- right column ---------- */
 
   function renderWelcome() {
-    main.innerHTML =
+    content.innerHTML =
       '<article class="welcome">' +
       '<h1>Encryption and Protocols</h1>' +
       '<p class="lead">What HTTPS looks like on the wire, why a sniffer cannot read it, and how you can, when you hold the keys.</p>' +
@@ -223,6 +236,7 @@
       '<li>Every row with a capture has a Wireshark-style packet table at the bottom. Click a packet to open it layer by layer.</li>' +
       '<li>The download buttons give you the same capture and key files, so you can repeat everything in Wireshark.</li>' +
       '</ol>' +
+      '<p class="hint"><b>Reading level.</b> The <b>Simple</b>, <b>Moderate</b> and <b>Engineer</b> buttons at the top right change how deep every explanation goes. Simple is the big idea in plain words, Moderate is CCNA-student depth, Engineer is the full technical detail kept short. Your choice is remembered on this browser, and a link with <code>?level=simple</code> (or moderate, engineer) opens the site at that level.</p>' +
       '<div class="banner warn"><b>This lab is deliberately insecure.</b> The server hands out its private key, uses an RSA key exchange with no forward secrecy, and logs every session secret. That is the opposite of what a real server should do, and it is the only way to see what the keys actually unlock.</div>' +
       '<h2>The two captures</h2>' +
       '<div class="table-wrap"><table class="lab"><tr><th>File</th><th>What happened</th><th>TLS</th><th>Keys that open it</th></tr>' +
@@ -245,17 +259,17 @@
 
   function sectionHtml(s) {
     var h = ['<section><h2>' + esc(s.h) + '</h2>'];
-    (s.p || []).forEach(function (p) { h.push('<p>' + p + '</p>'); });
+    lv(s.p || []).forEach(function (p) { h.push('<p>' + p + '</p>'); });
     if (s.anim && ANIMATIONS[s.anim]) h.push(assemblyHtml(s.anim, ANIMATIONS[s.anim]));
     if (s.packet) h.push('<div class="peek" data-file="' + esc(s.packet.file) + '" data-no="' + s.packet.no + '"><p class="loading">Loading frame ' + s.packet.no + ' of ' + esc(s.packet.file) + ' ...</p></div>');
-    if (s.steps) { h.push('<ol class="steps">'); s.steps.forEach(function (t) { h.push('<li>' + t + '</li>'); }); h.push('</ol>'); }
+    if (s.steps) { h.push('<ol class="steps">'); lv(s.steps).forEach(function (t) { h.push('<li>' + t + '</li>'); }); h.push('</ol>'); }
     if (s.keylog) h.push('<pre class="keyfile" data-src="' + esc(s.keylog) + '"' + (s.keylogLines ? ' data-lines="' + s.keylogLines + '"' : '') + '>Loading ' + esc(s.keylog) + ' ...</pre>');
     if (s.table) {
       h.push('<div class="table-wrap"><table class="lab compare">');
-      s.table.forEach(function (row, i) { h.push('<tr>' + row.map(function (c, j) { return (i === 0 || j === 0 ? '<th>' : '<td>') + c + (i === 0 || j === 0 ? '</th>' : '</td>'); }).join('') + '</tr>'); });
+      s.table.map(lv).forEach(function (row, i) { h.push('<tr>' + row.map(function (c, j) { return (i === 0 || j === 0 ? '<th>' : '<td>') + c + (i === 0 || j === 0 ? '</th>' : '</td>'); }).join('') + '</tr>'); });
       h.push('</table></div>');
     }
-    (s.after || []).forEach(function (p) { h.push('<p>' + p + '</p>'); });
+    lv(s.after || []).forEach(function (p) { h.push('<p>' + p + '</p>'); });
     if (s.files) {
       h.push('<div class="files">');
       s.files.forEach(function (f) { h.push('<a class="dl" href="' + esc(f.href) + '" download>' + esc(f.label) + '</a>' + (f.note ? '<span class="file-note">' + esc(f.note) + '</span>' : '')); });
@@ -271,13 +285,13 @@
     h.push('<article class="lesson" id="lesson-' + lesson.id + '">');
     h.push('<p class="crumb">Row ' + (index + 1) + ' of ' + LESSONS.length + '</p>');
     h.push('<h1>' + esc(lesson.title) + ' <small>' + esc(lesson.subtitle) + '</small></h1>');
-    h.push('<p class="lead">' + esc(lesson.oneLiner) + '</p>');
-    h.push('<div class="facts"><div><span class="k">Where it lives</span><span class="v">' + esc(lesson.layer) + '</span></div>');
+    h.push('<p class="lead">' + esc(lv(lesson.oneLiner)) + '</p>');
+    h.push('<div class="facts"><div><span class="k">Where it lives</span><span class="v">' + esc(lv(lesson.layer)) + '</span></div>');
     h.push('<div><span class="k">How this was made</span><span class="v"><code>' + esc(lesson.command) + '</code></span></div></div>');
     lesson.sections.forEach(function (s) { h.push(sectionHtml(s)); });
     if (lesson.steps) h.push('<section><h2>The conversation, step by step</h2><p class="hint">Dashed arrows are encrypted; a sniffer sees only that something of that size went by.</p><div class="diagram">' + diagram(lesson) + '</div></section>');
     h.push('<section><h2>What to look for</h2><ul class="lookfor">');
-    lesson.lookFor.forEach(function (t) { h.push('<li>' + esc(t) + '</li>'); });
+    lv(lesson.lookFor).forEach(function (t) { h.push('<li>' + esc(t) + '</li>'); });
     h.push('</ul></section>');
     if (lesson.file) {
       h.push('<section class="packets"><div class="packets-head"><h2>The packets</h2><div class="dl-group">' +
@@ -288,7 +302,7 @@
         '<div id="table" class="table-wrap"><p class="loading">Loading capture...</p></div></section>');
     }
     h.push('</article>');
-    main.innerHTML = h.join('');
+    content.innerHTML = h.join('');
     main.scrollTop = 0;
     startAnimations();
     loadTextFiles();
@@ -517,6 +531,8 @@
   buildMenu();
   buildNav();
   (function () { var c = document.getElementById('net-cidr'); if (c) c.textContent = SITE.labNetwork; })();
+  window.rerender = function () { var y = main.scrollTop; route(); main.scrollTop = y; };
+  wireLevelBar(document.getElementById('level-bar'));
   window.addEventListener('hashchange', route);
   route();
 })();

@@ -106,6 +106,9 @@ study it without running anything:
 - `site/pcaps/https-github-pages.pcap` and `site/keys/github-pages-keylog.txt`: a real Chromium
   visit to the Protocols site on GitHub Pages, TLS 1.3, decryptable only through the browser's key
   log (the SSLKEYLOGFILE method).
+- `site/level.js` is the Simple | Moderate | Engineer toggle shared by all Packet Lessons sites:
+  every explanation in `site/lessons.js` exists at three depths (`{ s, m, e }` objects), the
+  buttons at the top right pick one, and `?level=simple` in the URL opens the site at that level.
 - `site/tls.js` decrypts both captures in the browser with WebCrypto (TLS 1.2 PRF and AES-GCM, and
   the TLS 1.3 HKDF schedule), so the page can show the recovered HTTP next to the ciphertext, and
   show every record failing when one hex digit of the key is changed.
