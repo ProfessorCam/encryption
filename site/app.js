@@ -193,6 +193,10 @@
       '<tr><td><code>' + esc(FILES.login) + '</code></td><td>Chrome logged in to a lab web server on ' + esc(SITE.labName) + ' (' + esc(SITE.labNetwork) + '): the login page, a missing favicon, and the form submission with the password. 69 packets, 4 connections.</td><td>TLS 1.2, RSA-AES128-GCM-SHA256</td><td><code>keylog.txt</code> (server), <code>chrome-keylog.txt</code> (browser), or <code>server.key</code></td></tr>' +
       '<tr><td><code>' + esc(FILES.pages) + '</code></td><td>Chromium loaded the Protocols site from GitHub Pages: DNS, then nine connections fetching the page, its scripts and three pcap files. 182 packets.</td><td>TLS 1.3, TLS_AES_128_GCM_SHA256, x25519</td><td><code>github-pages-keylog.txt</code> (browser) only. No private key can open this one.</td></tr>' +
       '</table></div>' +
+      '<h2>Run the live server yourself</h2>' +
+      '<p class="hint">Both captures on this site are recordings. The server behind the first one is published on Docker Hub, so you can make your own capture instead of studying mine. It listens on port 443 inside the container; this maps it to port ' + SITE.port + ' on your machine:</p>' +
+      '<pre class="cmd">docker run -d --name https-demo -p ' + SITE.port + ':443 ' + esc(SITE.image) + '</pre>' +
+      '<p class="hint">Then open <a href="https://localhost:' + SITE.port + '/">https://localhost:' + SITE.port + '/</a> with Wireshark capturing on the loopback interface. Row 4 has the full steps. The container makes a new private key every time it starts, so its files will not open the recording here, only your own capture. Stop it with <code>docker rm -f https-demo</code>.</p>' +
       '<h2>Reading the packet table</h2>' +
       '<ul>' +
       '<li><b>Protocol</b> says TLSv1.2 or TLSv1.3 once the handshake has settled the version. Application Data is the encrypted HTTP.</li>' +

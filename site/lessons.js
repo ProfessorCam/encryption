@@ -19,6 +19,8 @@
  */
 
 var SITE = {
+  image: 'professorcryan/https-demo:latest',   /* Docker Hub image of the live HTTPS server this site records */
+  port: 8443,                                   /* host port; the container listens on 443 */
   labName: 'Lab WiFi',
   labNetwork: '192.168.110.0/23',
   menu: [
@@ -193,6 +195,15 @@ var LESSONS = [
         'Edit, Preferences, Protocols, TLS, <i>RSA keys list</i>, Edit. Add a row: key file = server.key, leave IP, port and protocol empty. OK twice.',
         'Wireshark decrypts frame 8 with the private key, recovers the pre-master secret, and derives the same session keys. Everything decodes exactly as before.',
         'Remove the key again, and the same frames go back to Application Data. Nothing changed but your key.'
+      ] },
+      { h: 'Do it live instead of from the recording', p: [
+        'The recording is convenient, but the server that made it is on Docker Hub, so you can capture your own login instead. Run it on your machine, capture on the loopback interface, and every file the steps above need is handed to you by the page itself:'
+      ], steps: [
+        '<code>docker run -d --name https-demo -p ' + SITE.port + ':443 ' + SITE.image + '</code>',
+        'Start Wireshark on the loopback interface (<i>lo</i>, or "Adapter for loopback"), filter <code>tls</code>.',
+        'Open <a href="https://localhost:' + SITE.port + '/">https://localhost:' + SITE.port + '/</a>, accept the certificate warning (a fresh self-signed key is generated every time the container starts), type a password, Submit.',
+        'The confirmation page links to <code>keylog.txt</code> and <code>server.key</code> for your own session. Load either one in Wireshark exactly as above and find your password.',
+        'Finished: <code>docker rm -f https-demo</code>.'
       ] },
       { h: 'The same thing, done in your browser', p: [
         'To prove there is no trick, this page does what Wireshark does, in JavaScript: it reassembles the TCP streams from the packets below, takes the master secret from <code>keylog.txt</code>, derives the AES session keys with the TLS 1.2 key expansion, and opens every record with AES-GCM using the browser\'s own crypto. The result is below. Flip to the wrong key and watch every record fail its integrity check.'

@@ -29,6 +29,12 @@ docker build -t https-demo .
 docker run --rm -p 8443:443 https-demo
 ```
 
+Or pull the published image instead of building:
+
+```bash
+docker run -d --name https-demo -p 8443:443 professorcryan/https-demo:latest
+```
+
 Open **https://localhost:8443** and accept the self-signed-certificate warning
 (itself a teaching moment: browsers don't trust certs nobody vouched for). The
 browser may also flag "obsolete cryptography" — that's the deliberately old

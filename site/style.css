@@ -302,3 +302,5 @@ table.compare td, table.compare th { vertical-align: top; }
 .msg mark { background: #ffe66d; color: #1b2233; padding: 0 3px; border-radius: 3px; font-weight: 700; }
 .more-btn { font: inherit; font-size: 12px; padding: 3px 10px; border-radius: 6px; border: 1px solid var(--line, #dde3ec); background: #fff; cursor: pointer; margin-bottom: 4px; }
 table.compare td { font-family: inherit; }
+
+.cmd { background: #0f172a; color: #e2e8f0; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; padding: 12px 14px; border-radius: 10px; overflow-x: auto; white-space: pre; margin: 8px 0 10px; user-select: all; }
