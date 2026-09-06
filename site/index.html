@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Encryption and Protocols</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <button id="menu-btn" class="rail" type="button" aria-label="Open site menu" aria-expanded="false" aria-controls="sitemenu">
+      <span class="rail-chevron" aria-hidden="true">&#8250;</span>
+      <span class="rail-logo" aria-hidden="true">&#9673;</span>
+    </button>
+    <nav id="sitemenu" class="sitemenu" aria-label="Sites"></nav>
+    <aside class="side">
+      <div class="brand">
+        <a href="#" class="brand-link"><span class="logo" aria-hidden="true">&#9673;</span><span>Packet Lessons</span></a>
+        <p class="brand-sub"><b>Encryption and Protocols.</b> Click a row to see what HTTPS hides, and how to look inside.</p>
+      </div>
+      <nav id="nav" class="nav" aria-label="Lessons"></nav>
+      <div class="side-foot">
+        A real HTTPS login on the <span id="net-cidr">lab</span> network, and a real visit to GitHub Pages.<br>
+        Open any capture in Wireshark with the download button.
+      </div>
+    </aside>
+    <main id="main" class="main" aria-live="polite"></main>
+  </div>
+
+  <script src="pcap.js"></script>
+  <script src="tls.js"></script>
+  <script src="lessons.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

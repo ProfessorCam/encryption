@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Encryption and Protocols</title>
+<style>
+  /* Same theme as the Protocols site (professorcam.github.io/pcap) */
+  :root {
+    --ink: #1b2233; --muted: #5b6577; --line: #dde3ec; --bg: #f4f6fa; --panel: #ffffff;
+    --side: #1f2a44; --side-ink: #e8ecf5; --side-muted: #97a3bd;
+    --accent: #2f6fed; --accent-soft: #e6eefc;
+    --asym: #2f6fed; --sym: #d9762b; --danger: #b3261e;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { font-family: var(--sans); color: var(--ink); background: var(--bg); font-size: 16px; line-height: 1.55; }
+  .app { display: grid; grid-template-columns: 56px 300px 1fr; height: 100vh; position: relative; overflow: hidden; }
+
+  /* ---------- rail + expanding site menu ---------- */
+  .rail { position: relative; z-index: 30; background: #111827; color: var(--side-ink); display: flex; flex-direction: column; align-items: center; padding: 14px 0 16px; gap: 14px; border: 0; border-right: 1px solid rgba(255,255,255,.08); font: inherit; cursor: pointer; transition: background .15s; }
+  .rail:hover, .rail.open { background: #172035; }
+  .rail:focus-visible { outline: 2px solid #6ea0ff; outline-offset: -3px; }
+  .rail-chevron { font-size: 26px; line-height: 1; color: #9dbcff; transition: transform .22s ease; }
+  .rail.open .rail-chevron { transform: rotate(180deg); }
+  .rail-logo { margin-top: auto; color: #6ea0ff; font-size: 20px; }
+  .sitemenu { position: absolute; top: 0; bottom: 0; left: 56px; width: 272px; z-index: 25; background: #111827; border-right: 1px solid rgba(255,255,255,.12); box-shadow: 10px 0 30px rgba(0,0,0,.35); padding: 18px 12px; display: flex; flex-direction: column; gap: 4px; visibility: hidden; opacity: 0; transform: translateX(-100%); transition: transform .22s ease, opacity .18s ease, visibility 0s linear .22s; }
+  .sitemenu.open { visibility: visible; opacity: 1; transform: none; transition-delay: 0s; }
+  .sitemenu-title { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--side-muted); padding: 4px 12px 8px; }
+  .menu-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 12px; border-radius: 8px; color: var(--side-ink); text-decoration: none; font-size: 15px; font-weight: 600; }
+  a.menu-item:hover { background: rgba(255,255,255,.08); }
+  a.menu-item:focus-visible { outline: 2px solid #6ea0ff; outline-offset: -2px; }
+  .menu-item.current { color: #fff; background: rgba(47,111,237,.25); }
+  .menu-item small { flex: 0 0 auto; white-space: nowrap; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; border-radius: 5px; padding: 2px 6px; background: rgba(255,255,255,.1); color: var(--side-muted); }
+  .menu-item.current small { color: #cfe0ff; background: rgba(47,111,237,.35); }
+  .menu-item.soon { color: var(--side-muted); cursor: default; }
+  .sitemenu-foot { margin-top: auto; font-size: 12px; color: var(--side-muted); padding: 8px 12px; }
+
+  /* ---------- left column ---------- */
+  .side { background: var(--side); color: var(--side-ink); display: flex; flex-direction: column; overflow-y: auto; }
+  .brand { padding: 20px 20px 12px; border-bottom: 1px solid rgba(255,255,255,.08); }
+  .brand-link { color: #fff; text-decoration: none; font-weight: 700; font-size: 19px; display: flex; align-items: center; gap: 9px; }
+  .logo { color: #6ea0ff; font-size: 21px; }
+  .brand-sub { margin: 8px 0 0; color: var(--side-muted); font-size: 13px; }
+  .brand-sub b { color: var(--side-ink); }
+  .nav { padding: 10px; display: flex; flex-direction: column; gap: 4px; }
+  .row { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; background: transparent; border: 1px solid transparent; border-radius: 10px; color: var(--side-ink); padding: 12px; cursor: pointer; font: inherit; text-decoration: none; transition: background .12s; }
+  .row:hover { background: rgba(255,255,255,.07); }
+  .row:focus-visible { outline: 2px solid #6ea0ff; outline-offset: 1px; }
+  .row.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .row .num { flex: 0 0 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.12); font-weight: 700; font-family: var(--mono); }
+  .row.active .num { background: rgba(255,255,255,.25); }
+  .row .text { display: flex; flex-direction: column; min-width: 0; }
+  .row .title { font-weight: 700; font-size: 17px; }
+  .row .sub { font-size: 12.5px; color: var(--side-muted); line-height: 1.35; }
+  .row.active .sub { color: rgba(255,255,255,.85); }
+  .side-foot { margin-top: auto; padding: 16px 20px; font-size: 12px; color: var(--side-muted); border-top: 1px solid rgba(255,255,255,.08); }
+  .side-foot a { color: #9dbcff; }
+
+  /* ---------- right column ---------- */
+  .main { overflow-y: auto; padding: 36px 48px 80px; scroll-behavior: smooth; }
+  .lesson { max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 34px; margin: 0 0 8px; line-height: 1.15; letter-spacing: -.01em; }
+  h1 small { display: block; font-size: 17px; font-weight: 500; color: var(--muted); margin-top: 4px; }
+  h2 { font-size: 20px; margin: 30px 0 8px; }
+  h3 { font-size: 17px; margin: 0 0 6px; }
+  .crumb { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .08em; margin: 0 0 6px; }
+  .lead { font-size: 19px; color: #2c3547; margin: 10px 0 18px; }
+  p { margin: 0 0 12px; }
+  code { font-family: var(--mono); font-size: .92em; background: #eef1f6; padding: 1px 5px; border-radius: 4px; word-break: break-all; }
+  a { color: var(--accent); }
+  section { scroll-margin-top: 12px; }
+  .banner { display: block; width: 100%; max-width: 560px; border-radius: 12px; border: 1px solid var(--line); margin: 6px 0 18px; }
+
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin: 12px 0; }
+  .card.asym { border-left: 5px solid var(--asym); }
+  .card.sym { border-left: 5px solid var(--sym); }
+  .col-tag { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+  .col-tag.a { color: var(--asym); } .col-tag.s { color: #a4561a; }
+  pre { background: #1b2233; color: #d6e4ff; padding: 12px 14px; border-radius: 8px; overflow-x: auto; font-family: var(--mono); font-size: 12px; white-space: pre-wrap; word-break: break-all; margin: 8px 0 12px; }
+  .secret { color: var(--danger); font-weight: 700; }
+  .warn { background: #fff4e0; border: 1px solid #f0c882; color: #7a4a00; border-radius: 10px; padding: 12px 16px; margin: 0 0 12px; font-size: 15px; }
+
+  form.login { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin: 12px 0 8px; max-width: 420px; }
+  form.login label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin: 8px 0 3px; }
+  form.login input[type=text], form.login input[type=password] { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; font: inherit; font-size: 15px; }
+  form.login input[type=text]:focus, form.login input[type=password]:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: var(--accent); }
+  form.login input[type=submit] { margin-top: 14px; background: var(--accent); color: #fff; border: 0; font: inherit; font-weight: 600; font-size: 15px; padding: 9px 18px; border-radius: 8px; cursor: pointer; }
+  form.login input[type=submit]:hover { background: #245bd0; }
+
+  .flow { display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: stretch; margin: 12px 0; }
+  .flow > .card { margin: 0; }
+  .arrow-mid { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-width: 96px; }
+  .arrow-mid .lbl { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .steps li { margin-bottom: 8px; }
+  .dl { display: inline-block; background: var(--accent); color: #fff; text-decoration: none; font-weight: 600; font-size: 14px; padding: 7px 13px; border-radius: 8px; margin: 2px 6px 6px 0; }
+  .dl:hover { background: #245bd0; }
+  .dl.sym { background: var(--sym); } .dl.sym:hover { background: #bf6420; }
+
+  @media (max-width: 1100px) { .flow { grid-template-columns: 1fr; } .arrow-mid svg { transform: rotate(90deg); } }
+  @media (max-width: 860px) {
+    .app { grid-template-columns: 1fr; height: auto; overflow: visible; }
+    .rail { flex-direction: row; padding: 10px 14px; gap: 12px; position: sticky; top: 0; width: 100%; }
+    .rail-chevron { transform: rotate(90deg); }
+    .rail.open .rail-chevron { transform: rotate(-90deg); }
+    .rail-logo { margin-top: 0; margin-left: auto; }
+    .sitemenu { position: fixed; top: 50px; bottom: auto; left: 0; width: 100%; transform: translateY(-110%); box-shadow: 0 12px 30px rgba(0,0,0,.35); }
+    .nav { flex-direction: row; overflow-x: auto; }
+    .row { min-width: 200px; }
+    .side-foot { display: none; }
+    .main { padding: 24px 18px 60px; }
+    h1 { font-size: 28px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <button id="menu-btn" class="rail" type="button" aria-label="Open site menu" aria-expanded="false" aria-controls="sitemenu">
+    <span class="rail-chevron" aria-hidden="true">&#8250;</span>
+    <span class="rail-logo" aria-hidden="true">&#9673;</span>
+  </button>
+  <nav id="sitemenu" class="sitemenu" aria-label="Sites"></nav>
+
+  <aside class="side">
+    <div class="brand">
+      <a href="/" class="brand-link"><span class="logo" aria-hidden="true">&#9673;</span><span>Packet Lessons</span></a>
+      <p class="brand-sub"><b>Encryption and Protocols.</b> Log in over HTTPS, capture it, then decrypt it yourself.</p>
+    </div>
+    <nav class="nav" id="nav" aria-label="Steps">
+      <a class="row" href="#login" data-target="login"><span class="num">1</span><span class="text"><span class="title">Log in</span><span class="sub">Submit a password over HTTPS while Wireshark captures</span></span></a>
+      <a class="row" href="#keys" data-target="keys"><span class="num">2</span><span class="text"><span class="title">The keys</span><span class="sub">Asymmetric keypair sets up the symmetric session secret</span></span></a>
+      <a class="row" href="#decrypt" data-target="decrypt"><span class="num">3</span><span class="text"><span class="title">Decrypt it</span><span class="sub">Load the keys in Wireshark and find your password</span></span></a>
+    </nav>
+    <div class="side-foot">
+      Runs from the Docker image on this machine: it needs a real TLS server whose keys it can hand you.<br>
+      Files: <a href="/server.key">server.key</a> &middot; <a href="/server.crt">server.crt</a> &middot; <a href="/keylog.txt">keylog.txt</a>
+    </div>
+  </aside>
+
+  <main class="main" id="main">
+    <article class="lesson">
+      <p class="crumb">Encryption and Protocols</p>
+      <h1>HTTPS <small>The same login page as the HTTP lab, now encrypted. And every key it used, handed to you.</small></h1>
+      <p class="lead">Type a password and submit. It crosses the wire scrambled, so a plain Wireshark capture shows only ciphertext. But encryption is only as secret as its keys, and this page shows you all of them.</p>
+      <img class="banner" src="https://blog.smu.edu/itconnect/files/2018/08/Tux-Banner-1024x400-2g55u6j.png" alt="Tux banner">
+
+      <section id="login">
+        <h2>1. Log in over HTTPS</h2>
+        <p>Start a Wireshark capture on your loopback interface first (filter: <code>tls</code>), then submit the form.</p>
+        <form class="login" action="/action_page.php">
+          <label for="name">Name</label>
+          <input type="text" id="name" name="name" value="Tux">
+          <label for="pwd">Password</label>
+          <input type="password" id="pwd" name="pwd" autocomplete="off">
+          <input type="submit" value="Submit over HTTPS">
+        </form>
+        <p>When you click Submit, the form data is sent inside TLS. Wireshark records it, but it stays scrambled until you load the keys below.</p>
+      </section>
+
+      <section id="keys">
+        <h2>2. The keys HTTPS used</h2>
+        <p>Two kinds of keys work together. The <b>asymmetric</b> keypair (left) is used to secretly agree on the <b>symmetric</b> key (right), and that symmetric key encrypts your data. Follow the arrow.</p>
+        <div class="warn">Classroom only. Showing a private key and turning off forward secrecy is deliberately insecure, the opposite of what a real server does.</div>
+        <div class="flow">
+          <div class="card asym">
+            <div class="col-tag a">Step 1 &middot; Asymmetric</div>
+            <h3>&#128273; The keypair</h3>
+            <p>Two matching keys. The <b>public key</b> (handed out in the certificate) locks; the <b>private key</b> unlocks. Your browser uses the public key to secretly pass the server a value that both sides turn into the symmetric key, so the asymmetric keypair is what safely sets up the symmetric one.</p>
+            <p><b>Public key</b>, safe for anyone to see.</p>
+            <pre>{PUBLIC_KEY}</pre>
+            <p><span class="secret">Private key, normally never shared.</span> Shown here so you can see the whole picture.</p>
+            <a class="dl" href="/server.key">Download server.key</a>
+            <pre>{PRIVATE_KEY}</pre>
+          </div>
+          <div class="arrow-mid">
+            <span class="lbl">establishes</span>
+            <svg viewBox="0 0 120 60" width="100" height="52" role="img" aria-label="Asymmetric keypair establishes the symmetric key">
+              <defs><linearGradient id="ag" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2f6fed"/><stop offset="1" stop-color="#d9762b"/></linearGradient></defs>
+              <path d="M114 30 L74 8 L74 22 L4 22 L4 38 L74 38 L74 52 Z" fill="url(#ag)"/>
+            </svg>
+          </div>
+          <div class="card sym">
+            <div class="col-tag s">Step 2 &middot; Symmetric</div>
+            <h3>&#128272; Session secrets</h3>
+            <p>One fast key both sides share. It does the real work: everything you type, including your password, is encrypted with this. To read a capture in Wireshark, you load these secrets. <b>Submit the form, then refresh this page</b> to see your own session appear.</p>
+            <a class="dl sym" href="/keylog.txt">Download keylog.txt</a>
+            <pre>{KEYLOG}</pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="decrypt">
+        <h2>3. Decrypt it yourself in Wireshark</h2>
+        <div class="card">
+          <p>Capture on the loopback interface, filter with <code>tls</code>, submit the form, then decrypt:</p>
+          <ol class="steps">
+            <li><b>Session secrets (works everywhere, use this):</b> download <code>keylog.txt</code>, then in Wireshark go to Preferences &rarr; Protocols &rarr; TLS &rarr; <em>(Pre)-Master-Secret log filename</em> and point it at the file.</li>
+            <li><b>RSA private key (advanced, optional):</b> Preferences &rarr; Protocols &rarr; TLS &rarr; <em>RSA keys list</em> &rarr; add <code>server.key</code> (IP any, port 443, protocol http). This only works because forward secrecy is off, and only on Wireshark builds whose crypto backend still supports raw RSA decryption. Many recent builds do not, so fall back to method 1.</li>
+          </ol>
+          <p>Then right-click the decrypted packet &rarr; Follow &rarr; HTTP Stream and read your request: <code>GET /action_page.php?name=Tux&amp;pwd=...</code></p>
+        </div>
+      </section>
+    </article>
+  </main>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  /* Same site list as the Protocols site. href null = not built yet. */
+  var MENU = [
+    { label: 'Frames & Packets', href: null },
+    { label: 'Protocols', href: 'https://professorcam.github.io/pcap/' },
+    { label: 'Encryption and Protocols', href: '/', current: true }
+  ];
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  var panel = document.getElementById('sitemenu'), btn = document.getElementById('menu-btn');
+  panel.innerHTML = '<div class="sitemenu-title">Sites</div>' + MENU.map(function (m) {
+    if (!m.href) return '<span class="menu-item soon"><span>' + esc(m.label) + '</span><small>coming soon</small></span>';
+    return '<a class="menu-item' + (m.current ? ' current' : '') + '" href="' + esc(m.href) + '"' + (m.current ? ' aria-current="page"' : '') + '>' + esc(m.label) + (m.current ? '<small>you are here</small>' : '') + '</a>';
+  }).join('') + '<div class="sitemenu-foot">Click anywhere else, or press Escape, to close.</div>';
+  var leaveTimer = null;
+  function setOpen(open) {
+    panel.classList.toggle('open', open); btn.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    btn.setAttribute('aria-label', open ? 'Close site menu' : 'Open site menu');
+    if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
+  }
+  function isOpen() { return panel.classList.contains('open'); }
+  btn.addEventListener('click', function (e) { e.stopPropagation(); setOpen(!isOpen()); });
+  panel.addEventListener('click', function (e) { e.stopPropagation(); if (e.target.closest('a.menu-item')) setOpen(false); });
+  document.addEventListener('click', function () { if (isOpen()) setOpen(false); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && isOpen()) { setOpen(false); btn.focus(); } });
+  panel.addEventListener('mouseleave', function () { if (isOpen()) leaveTimer = setTimeout(function () { setOpen(false); }, 1200); });
+  panel.addEventListener('mouseenter', function () { if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; } });
+  panel.addEventListener('focusout', function (e) { if (!panel.contains(e.relatedTarget) && e.relatedTarget !== btn) setOpen(false); });
+
+  /* highlight the step that is on screen */
+  var rows = document.querySelectorAll('#nav .row');
+  function setActive(id) { rows.forEach(function (r) { r.classList.toggle('active', r.dataset.target === id); }); }
+  if ('IntersectionObserver' in window) {
+    var visible = {};
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { visible[en.target.id] = en.isIntersecting ? en.intersectionRatio : 0; });
+      var best = null; Object.keys(visible).forEach(function (k) { if (visible[k] > 0 && (best === null || visible[k] > visible[best])) best = k; });
+      if (best) setActive(best);
+    }, { root: document.getElementById('main'), threshold: [0.1, 0.4, 0.7] });
+    document.querySelectorAll('main section').forEach(function (s) { io.observe(s); });
+  } else { setActive('login'); }
+})();
+</script>
+</body>
+</html>
