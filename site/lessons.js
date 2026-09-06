@@ -38,7 +38,7 @@ var SITE = {
 var FILES = {
   login: 'https-login-192.168.110.1.pcap',
   pages: 'https-github-pages.pcap',
-  http: 'http-httpforever.pcap'          /* the plain HTTP capture from row 6 of the Protocols site */
+  http: 'http-httpforever.pcap'          /* the plain HTTP capture from the HTTP row of the Protocols site */
 };
 
 var LESSONS = [
@@ -61,9 +61,9 @@ var LESSONS = [
     file: FILES.login,
     sections: [
       { h: 'Why HTTP was not enough', p: [{
-        s: 'On the Protocols site, row 6 showed a plain web request. Everything in it, the page you asked for and the words you typed, went past in readable letters. Anyone sharing your Wi-Fi could read it with Wireshark, and so could every router along the way. Here is that packet again:',
-        m: 'On the Protocols site, row 6 showed a plain HTTP request. Every header, every form field and the whole page came past in readable text. Anyone on the same Wi-Fi with Wireshark could read it, and so could every router between you and the server. Here is that packet again, frame 6 of the plain HTTP capture, with the bytes it carried:',
-        e: 'The plain HTTP request in row 6 of the Protocols site carried its request line, headers and body as cleartext in the TCP payload; any host on the path, or on the same broadcast domain, could read it. Frame 6 of that capture again, payload included:'
+        s: 'On the Protocols site, the HTTP row showed a plain web request. Everything in it, the page you asked for and the words you typed, went past in readable letters. Anyone sharing your Wi-Fi could read it with Wireshark, and so could every router along the way. Here is that packet again:',
+        m: 'On the Protocols site, the HTTP row showed a plain HTTP request. Every header, every form field and the whole page came past in readable text. Anyone on the same Wi-Fi with Wireshark could read it, and so could every router between you and the server. Here is that packet again, frame 6 of the plain HTTP capture, with the bytes it carried:',
+        e: 'The plain HTTP request in the HTTP row of the Protocols site carried its request line, headers and body as cleartext in the TCP payload; any host on the path, or on the same broadcast domain, could read it. Frame 6 of that capture again, payload included:'
       }], packet: { file: FILES.http, no: 6 }, after: [{
         s: 'HTTPS fixes that by scrambling the web part before it goes on the wire. The delivery part still works exactly as before, but the letter inside the envelope is now in code. The padlock in the address bar means two things and nothing more: the conversation is scrambled, and the website proved who it is.',
         m: 'HTTPS fixes that by putting <b>TLS</b> (Transport Layer Security) between TCP and HTTP. TCP still delivers the bytes in order, HTTP still says <code>GET /</code>, but in between the bytes are encrypted. The padlock in the address bar means exactly this and nothing more: the conversation is scrambled, and the certificate said the server is who it claims to be.',
@@ -136,8 +136,8 @@ var LESSONS = [
         m: 'Frame 8: Client Key Exchange, 258 bytes. A secret encrypted with the public key from the certificate. Then Change Cipher Spec, and the very next message is already unreadable.',
         e: 'Frame 8: Client Key Exchange, 258 bytes (2-byte length plus 256 bytes of RSA-2048 ciphertext), then Change Cipher Spec; the Finished that follows is already encrypted.' },
       { s: 'Frame 15: this is the browser asking for the page, the same request that was readable on the Protocols site. Here it is 754 bytes of noise.',
-        m: 'Frame 15, Application Data, 754 bytes: that is GET / HTTP/1.1 with all its headers. Compare with row 6 on the Protocols site where the same request was readable.',
-        e: 'Frame 15: Application Data, 754 bytes, carrying GET / HTTP/1.1 and its headers. Compare with row 6 on the Protocols site, where the same request was cleartext.' },
+        m: 'Frame 15, Application Data, 754 bytes: that is GET / HTTP/1.1 with all its headers. Compare with the HTTP row on the Protocols site where the same request was readable.',
+        e: 'Frame 15: Application Data, 754 bytes, carrying GET / HTTP/1.1 and its headers. Compare with the HTTP row on the Protocols site, where the same request was cleartext.' },
       { s: 'Frame 49: the login form with the password inside. Not one readable letter.',
         m: 'Frame 49: the login form. The URL with the password is in there. 771 bytes of TLS, and not one readable character.',
         e: 'Frame 49: the form submission. 771 bytes of TLS record carrying a 742-byte plaintext plus 8-byte nonce and 16-byte tag; no plaintext bytes on the wire.' },
@@ -162,7 +162,7 @@ var LESSONS = [
       m: 'TLS handshake messages ride inside TLS records, inside TCP. Frames 4, 6, 8 and 14 are the whole thing.',
       e: 'Handshake protocol messages (content type 22) inside TLS records inside TCP; Change Cipher Spec is content type 20. Frames 4, 6, 8 and 14 are the whole thing.'
     },
-    command: 'Same capture as row 1; look at the first connection, client port 46484',
+    command: 'Same capture as the HTTPS row; look at the first connection, client port 46484',
     file: FILES.login,
     sections: [
       { h: 'Step by step', p: {

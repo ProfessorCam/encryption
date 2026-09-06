@@ -65,7 +65,6 @@
       b.type = 'button';
       b.dataset.id = l.id;
       b.innerHTML =
-        '<span class="num">' + (i + 1) + '</span>' +
         '<span class="text"><span class="title">' + esc(l.title) + '</span>' +
         '<span class="sub">' + esc(l.subtitle) + '</span></span>' +
         (l.stack !== undefined ? '<span class="lay">' + esc(l.chip || STACK_CHIPS[l.stack] || l.stack) + '</span>' : '');
@@ -232,7 +231,7 @@
       '<p class="lead">What HTTPS looks like on the wire, why a sniffer cannot read it, and how you can, when you hold the keys.</p>' +
       '<h2>How to use this page</h2>' +
       '<ol>' +
-      '<li>Work through the rows on the left in order. Row 1 shows a real HTTPS login as a sniffer sees it; row 4 decrypts it; row 5 does the same with your own browser and a real website.</li>' +
+      '<li>Work through the rows on the left in order. \u201cHTTPS\u201d shows a real login as a sniffer sees it; \u201cDecrypt the recorded session\u201d decrypts it; \u201cDecrypt your own browser\u201d does the same with your own browser and a real website.</li>' +
       '<li>Every row with a capture has a Wireshark-style packet table at the bottom. Click a packet to open it layer by layer.</li>' +
       '<li>The download buttons give you the same capture and key files, so you can repeat everything in Wireshark.</li>' +
       '</ol>' +
@@ -246,7 +245,7 @@
       '<h2>Run the live server yourself</h2>' +
       '<p class="hint">Both captures on this site are recordings. The server behind the first one is published on Docker Hub, so you can make your own capture instead of studying mine. It listens on port 443 inside the container; this maps it to port ' + SITE.port + ' on your machine:</p>' +
       '<pre class="cmd">docker run -d --name https-demo -p ' + SITE.port + ':443 ' + esc(SITE.image) + '</pre>' +
-      '<p class="hint">Then open <a href="https://localhost:' + SITE.port + '/">https://localhost:' + SITE.port + '/</a> with Wireshark capturing on the loopback interface. Row 4 has the full steps. The container makes a new private key every time it starts, so its files will not open the recording here, only your own capture. Stop it with <code>docker rm -f https-demo</code>.</p>' +
+      '<p class="hint">Then open <a href="https://localhost:' + SITE.port + '/">https://localhost:' + SITE.port + '/</a> with Wireshark capturing on the loopback interface. The \u201cDecrypt the recorded session\u201d row has the full steps. The container makes a new private key every time it starts, so its files will not open the recording here, only your own capture. Stop it with <code>docker rm -f https-demo</code>.</p>' +
       '<h2>Reading the packet table</h2>' +
       '<ul>' +
       '<li><b>Protocol</b> says TLSv1.2 or TLSv1.3 once the handshake has settled the version. Application Data is the encrypted HTTP.</li>' +
@@ -283,7 +282,7 @@
   function renderLesson(lesson, index) {
     var h = [];
     h.push('<article class="lesson" id="lesson-' + lesson.id + '">');
-    h.push('<p class="crumb">Row ' + (index + 1) + ' of ' + LESSONS.length + '</p>');
+    h.push('<p class="crumb">' + esc(STACK_GROUPS[lesson.stack] || 'Lesson') + '</p>');
     h.push('<h1>' + esc(lesson.title) + ' <small>' + esc(lesson.subtitle) + '</small></h1>');
     h.push('<p class="lead">' + esc(lv(lesson.oneLiner)) + '</p>');
     h.push('<div class="facts"><div><span class="k">Where it lives</span><span class="v">' + esc(lv(lesson.layer)) + '</span></div>');
@@ -347,7 +346,7 @@
 
   function peekHtml(p, file) {
     var protocols = SITE.menu.filter(function (m) { return m.label === 'Protocols' && m.href; })[0];
-    var where = protocols ? '<a href="' + esc(protocols.href) + '#http" target="_blank" rel="noopener">row 6 of the Protocols site</a>' : 'row 6 of the Protocols site';
+    var where = protocols ? '<a href="' + esc(protocols.href) + '#http" target="_blank" rel="noopener">the HTTP row of the Protocols site</a>' : 'the HTTP row of the Protocols site';
     var h = ['<div class="peek-head">Frame ' + p.no + ' of <code>' + esc(file) + '</code>, the capture behind ' + where + '. Click the row to fold the details away.</div>'];
     /* one-row packet table, already opened */
     h.push('<div class="table-wrap peek-table">' + packetTable([p]).replace('class="pkt ', 'class="pkt open ').replace('<tr class="det" hidden>', '<tr class="det">') + '</div>');

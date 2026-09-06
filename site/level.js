@@ -7,7 +7,7 @@
      [ 'string', { s: '...', m: '...' } ]  -> an array where each entry may be either
    A missing key falls back to Moderate, then to whatever exists. An explicit '' means
    "leave this paragraph out at this level". lv() resolves all of that, and also turns
-   {{row:id}} / {{Row:id}} into "row N" / "Row N" from the lesson's position in LESSONS. */
+   {{row:id}} / {{Row:id}} into 'the "Title" row' / 'The "Title" row' from the lesson's title. */
 
 var LEVELS = [
   { id: 's', label: 'Simple',   hint: 'Plain words and the big idea' },
@@ -48,9 +48,10 @@ function isLevelObject(x) {
 function rowRefs(str) {
   if (typeof str !== 'string' || str.indexOf('{{') < 0) return str;
   return str.replace(/\{\{(row|Row):([a-z0-9-]+)\}\}/g, function (all, word, id) {
-    var n = -1;
-    if (typeof LESSONS !== 'undefined') LESSONS.forEach(function (l, i) { if (l.id === id) n = i + 1; });
-    return n > 0 ? word + ' ' + n : all;
+    var title = null;
+    if (typeof LESSONS !== 'undefined') LESSONS.forEach(function (l) { if (l.id === id) title = l.title; });
+    if (!title) return all;
+    return (word === 'Row' ? 'The' : 'the') + ' \u201c' + title.replace(/^The /, '') + '\u201d row';
   });
 }
 
