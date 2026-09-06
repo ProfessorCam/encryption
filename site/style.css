@@ -186,6 +186,21 @@ svg.seq .stepno { font-size: 11px; fill: var(--muted); font-family: var(--mono);
 .asm.done .asm-bar { animation: asm-send 1.2s ease-in-out; }
 @keyframes asm-send { 0% { transform: translateX(0); } 50% { transform: translateX(14px); } 100% { transform: translateX(0); } }
 
+/* animation controls (pause, back, forward) */
+.asm-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+.asm-foot .asm-total { margin-top: 0; }
+.asm-ctl { display: flex; align-items: center; gap: 6px; }
+.asm-btn { width: 36px; height: 30px; padding: 0; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 8px; cursor: pointer; font-size: 12px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
+.asm-btn:hover { border-color: var(--accent); color: var(--accent); }
+.asm-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.asm-toggle { font-size: 11px; letter-spacing: -2px; }
+.asm.paused .asm-toggle { letter-spacing: 0; font-size: 12px; }
+.asm-step { font-family: var(--mono); font-size: 12.5px; color: var(--muted); margin-left: 6px; }
+.asm.paused .asm-step::after { content: ', paused'; }
+.asm-dots i { cursor: pointer; }
+.asm-dots i:hover { background: var(--accent-soft); }
+.asm-dots i.on:hover { background: var(--accent); }
+
 @media (max-width: 860px) {
   .asm-bar { height: 176px; }
   .seg-fields { font-size: 10.5px; }
@@ -304,3 +319,10 @@ table.compare td, table.compare th { vertical-align: top; }
 table.compare td { font-family: inherit; }
 
 .cmd { background: #0f172a; color: #e2e8f0; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; padding: 12px 14px; border-radius: 10px; overflow-x: auto; white-space: pre; margin: 8px 0 10px; user-select: all; }
+
+/* ---------- one frame from a capture, shown inline ---------- */
+.peek { margin: 6px 0 16px; }
+.peek-head { font-size: 13.5px; color: var(--muted); margin-bottom: 8px; }
+.peek-text { margin-top: 12px; }
+pre.plain { background: #0f172a; color: #e2e8f0; font-family: var(--mono); font-size: 13px; line-height: 1.45; padding: 12px 14px; border-radius: 10px; overflow-x: auto; margin: 6px 0 0; white-space: pre; }
+.peek-text .hint { margin-top: 8px; }

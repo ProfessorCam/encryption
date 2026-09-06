@@ -7,6 +7,7 @@
  *   id, title, subtitle, oneLiner, layer, command   - header facts
  *   sections: [{ h, p: [html...], anim?, after?, steps?, files?, keylog?, decrypt?, table? }]
  *     anim     - key into ANIMATIONS (app.js): a looping packet-assembly animation
+ *     packet   - { file, no }: one frame from a capture, shown as a small packet table with its details open
  *     steps    - numbered instructions (array of html strings)
  *     files    - download buttons: [{ label, href, note }]
  *     keylog   - path of a text file to show verbatim (the key log, the certificate ...)
@@ -32,7 +33,8 @@ var SITE = {
 
 var FILES = {
   login: 'https-login-192.168.110.1.pcap',
-  pages: 'https-github-pages.pcap'
+  pages: 'https-github-pages.pcap',
+  http: 'http-httpforever.pcap'          /* the plain HTTP capture from row 6 of the Protocols site */
 };
 
 var LESSONS = [
@@ -46,7 +48,8 @@ var LESSONS = [
     file: FILES.login,
     sections: [
       { h: 'Why HTTP was not enough', p: [
-        'On the Protocols site, row 6 showed a plain HTTP request. Every header, every form field and the whole page came past in readable text. Anyone on the same Wi-Fi with Wireshark could read it, and so could every router between you and the server.',
+        'On the Protocols site, row 6 showed a plain HTTP request. Every header, every form field and the whole page came past in readable text. Anyone on the same Wi-Fi with Wireshark could read it, and so could every router between you and the server. Here is that packet again, frame 6 of the plain HTTP capture, with the bytes it carried:'
+      ], packet: { file: FILES.http, no: 6 }, after: [
         'HTTPS fixes that by putting <b>TLS</b> (Transport Layer Security) between TCP and HTTP. TCP still delivers the bytes in order, HTTP still says <code>GET /</code>, but in between the bytes are encrypted. The padlock in the address bar means exactly this and nothing more: the conversation is scrambled, and the certificate said the server is who it claims to be.'
       ] },
       { h: 'Two kinds of keys', p: [

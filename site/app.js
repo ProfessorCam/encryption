@@ -109,7 +109,12 @@
         '<div class="seg-fields">' + g.fields.map(function (f) { return '<span>' + esc(f) + '</span>'; }).join('') + '</div></div>');
     });
     h.push('</div>');
-    h.push('<div class="asm-total"><span class="asm-total-label">Frame so far</span> <b class="asm-bytes">0</b> bytes</div>');
+    h.push('<div class="asm-foot"><div class="asm-ctl">' +
+      '<button type="button" class="asm-btn" data-act="prev" title="Back one step" aria-label="Back one step">&#9664;</button>' +
+      '<button type="button" class="asm-btn asm-toggle" data-act="toggle" title="Pause" aria-label="Pause">&#10074;&#10074;</button>' +
+      '<button type="button" class="asm-btn" data-act="next" title="Forward one step" aria-label="Forward one step">&#9654;</button>' +
+      '<span class="asm-step"></span></div>' +
+      '<div class="asm-total"><span class="asm-total-label">Frame so far</span> <b class="asm-bytes">0</b> bytes</div></div>');
     h.push('</div>');
     return h.join('');
   }
@@ -143,15 +148,21 @@
   var animTimers = [];
   function stopAnimations() { animTimers.forEach(clearTimeout); animTimers = []; }
 
+  /* Each animation loops on its own timer. The buttons under the bar pause it,
+   * or step one stage back or forward (stepping pauses, so the reader can
+   * take their time; play resumes the loop from that stage). */
   function startAnimations() {
     var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     Array.prototype.forEach.call(main.querySelectorAll('[data-anim]'), function (el) {
       var a = ANIMATIONS[el.dataset.anim];
       if (!a) return;
+      var n = a.stages.length;
       var segs = {}; Array.prototype.forEach.call(el.querySelectorAll('.seg'), function (s) { segs[s.dataset.seg] = s; });
       var text = el.querySelector('.asm-text'), dots = el.querySelectorAll('.asm-dots i'), bytesEl = el.querySelector('.asm-bytes');
-      function apply(i) {
-        var st = a.stages[i], total = 0;
+      var stepEl = el.querySelector('.asm-step'), toggleBtn = el.querySelector('.asm-toggle');
+      var i = 0, timer = null, playing = !reduce;
+      function apply(k) {
+        var st = a.stages[k], total = 0;
         a.segments.forEach(function (g) {
           var on = st.on.indexOf(g.id) >= 0;
           segs[g.id].classList.toggle('on', on);
@@ -160,17 +171,42 @@
         el.classList.toggle('done', !!st.done);
         text.textContent = st.caption;
         bytesEl.textContent = total;
-        Array.prototype.forEach.call(dots, function (d, j) { d.classList.toggle('on', j === i); });
+        stepEl.textContent = 'step ' + (k + 1) + ' of ' + n;
+        Array.prototype.forEach.call(dots, function (d, j) { d.classList.toggle('on', j === k); });
       }
-      if (reduce) { apply(a.stages.length - 1); return; }
-      var i = 0;
-      function step() {
-        apply(i);
-        var hold = a.stages[i].hold;
-        i = (i + 1) % a.stages.length;
-        animTimers.push(setTimeout(step, hold));
+      function clearTimer() {
+        if (timer === null) return;
+        clearTimeout(timer);
+        animTimers = animTimers.filter(function (t) { return t !== timer; });
+        timer = null;
       }
-      step();
+      function schedule() {
+        clearTimer();
+        if (!playing) return;
+        timer = setTimeout(function () { go((i + 1) % n); }, a.stages[i].hold);
+        animTimers.push(timer);
+      }
+      function go(k) { i = k; apply(i); schedule(); }
+      function setPlaying(p) {
+        playing = p;
+        el.classList.toggle('paused', !p);
+        toggleBtn.innerHTML = p ? '&#10074;&#10074;' : '&#9654;';
+        toggleBtn.title = p ? 'Pause' : 'Play';
+        toggleBtn.setAttribute('aria-label', p ? 'Pause' : 'Play');
+        schedule();
+      }
+      el.addEventListener('click', function (e) {
+        var b = e.target.closest ? e.target.closest('[data-act], .asm-dots i') : null;
+        if (!b || !el.contains(b)) return;
+        if (b.dataset.act === 'toggle') { setPlaying(!playing); return; }
+        setPlaying(false);
+        if (b.dataset.act === 'prev') go((i - 1 + n) % n);
+        else if (b.dataset.act === 'next') go((i + 1) % n);
+        else if (b.dataset.i !== undefined) go(+b.dataset.i);
+      });
+      if (reduce) { i = n - 1; }
+      setPlaying(playing);
+      apply(i);
     });
   }
 
@@ -211,6 +247,7 @@
     var h = ['<section><h2>' + esc(s.h) + '</h2>'];
     (s.p || []).forEach(function (p) { h.push('<p>' + p + '</p>'); });
     if (s.anim && ANIMATIONS[s.anim]) h.push(assemblyHtml(s.anim, ANIMATIONS[s.anim]));
+    if (s.packet) h.push('<div class="peek" data-file="' + esc(s.packet.file) + '" data-no="' + s.packet.no + '"><p class="loading">Loading frame ' + s.packet.no + ' of ' + esc(s.packet.file) + ' ...</p></div>');
     if (s.steps) { h.push('<ol class="steps">'); s.steps.forEach(function (t) { h.push('<li>' + t + '</li>'); }); h.push('</ol>'); }
     if (s.keylog) h.push('<pre class="keyfile" data-src="' + esc(s.keylog) + '"' + (s.keylogLines ? ' data-lines="' + s.keylogLines + '"' : '') + '>Loading ' + esc(s.keylog) + ' ...</pre>');
     if (s.table) {
@@ -255,6 +292,7 @@
     main.scrollTop = 0;
     startAnimations();
     loadTextFiles();
+    loadPeeks();
     if (lesson.file) loadPackets(lesson);
     Array.prototype.forEach.call(main.querySelectorAll('.decrypt'), runDecrypt);
   }
@@ -275,6 +313,37 @@
         else pre.textContent = lines.join('\n');
       }).catch(function (e) { pre.textContent = 'Could not load ' + pre.dataset.src + ': ' + e.message; });
     });
+  }
+
+  /* ---------- one frame from a capture, shown inline in a lesson ---------- */
+
+  function loadPeeks() {
+    Array.prototype.forEach.call(main.querySelectorAll('.peek'), function (box) {
+      var file = box.dataset.file, no = +box.dataset.no;
+      fetchPcap(file).then(function (packets) {
+        var p = packets[no - 1];
+        if (!p || p.no !== no) throw new Error('there is no frame ' + no);
+        box.innerHTML = peekHtml(p, file);
+        wireDetails(box, [p]);
+      }).catch(function (e) {
+        box.innerHTML = '<p class="error">Could not load frame ' + no + ' of ' + esc(file) + ': ' + esc(e.message) + '</p>';
+      });
+    });
+  }
+
+  function peekHtml(p, file) {
+    var protocols = SITE.menu.filter(function (m) { return m.label === 'Protocols' && m.href; })[0];
+    var where = protocols ? '<a href="' + esc(protocols.href) + '#http" target="_blank" rel="noopener">row 6 of the Protocols site</a>' : 'row 6 of the Protocols site';
+    var h = ['<div class="peek-head">Frame ' + p.no + ' of <code>' + esc(file) + '</code>, the capture behind ' + where + '. Click the row to fold the details away.</div>'];
+    /* one-row packet table, already opened */
+    h.push('<div class="table-wrap peek-table">' + packetTable([p]).replace('class="pkt ', 'class="pkt open ').replace('<tr class="det" hidden>', '<tr class="det">') + '</div>');
+    if (p.httpRaw && p.httpRaw.length) {
+      var txt = ''; for (var i = 0; i < p.httpRaw.length; i++) txt += String.fromCharCode(p.httpRaw[i]);
+      h.push('<div class="peek-text"><div class="sec-title">The ' + p.httpRaw.length + ' payload bytes, exactly as they crossed the wire</div>' +
+        '<pre class="plain">' + esc(txt.replace(/\r/g, '')) + '</pre>' +
+        '<p class="hint">Every character is readable. Scroll down to frame 49 in the capture on this page and open it: the same kind of request, and not one readable byte.</p></div>');
+    }
+    return h.join('');
   }
 
   /* ---------- packets ---------- */

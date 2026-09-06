@@ -424,7 +424,10 @@
     ].concat(optRows));
     p.details.push(p.tcpSection);
 
-    if (payloadLen > 0 && (sport === 80 || dport === 80)) decodeHttp(p, b, payload, end);
+    if (payloadLen > 0 && (sport === 80 || dport === 80)) {
+      p.httpRaw = b.slice(payload, end);   /* shown as text by the inline frame view in app.js */
+      decodeHttp(p, b, payload, end);
+    }
     else if (sport === 443 || dport === 443) {
       /* keep the raw bytes: tls.js reassembles the stream and decrypts it */
       p.payload = b.slice(payload, end);
