@@ -25,7 +25,7 @@ var SITE = {
   labName: 'Lab WiFi',
   labNetwork: '192.168.110.0/23',
   menu: [
-    { label: 'Frames & Packets', href: null },
+    { label: 'Frames & Packets', href: 'https://professorcam.github.io/frames/' },
     { label: 'Protocols', href: 'https://professorcam.github.io/pcap/' },
     { label: 'Encryption and Protocols', href: '#', current: true }
   ]
