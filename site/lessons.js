@@ -32,7 +32,8 @@ var SITE = {
     { label: 'Frames & Packets', href: 'https://professorcam.github.io/frames/' },
     { label: 'Protocols', href: 'https://professorcam.github.io/pcap/' },
     { label: 'Encryption and Protocols', href: '#', current: true },
-    { label: 'Packet Forensics', href: 'https://professorcam.github.io/forensics/' }
+    { label: 'Packet Forensics', href: 'https://professorcam.github.io/forensics/' },
+    { label: 'Server Basics', href: 'https://professorcam.github.io/servers/' }
   ]
 };
 
