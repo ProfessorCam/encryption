@@ -34,7 +34,8 @@ var SITE = {
     { label: 'Encryption and Protocols', href: '#', current: true },
     { label: 'Packet Forensics', href: 'https://professorcam.github.io/forensics/' },
     { label: 'Server Basics', href: 'https://professorcam.github.io/servers/' },
-    { label: 'IPv4 Subnetting', href: 'https://professorcam.github.io/ipv4/' }
+    { label: 'IPv4 Subnetting', href: 'https://professorcam.github.io/ipv4/' },
+    { label: 'IPv6 Subnetting', href: 'https://professorcam.github.io/ipv6/' }
   ]
 };
 
